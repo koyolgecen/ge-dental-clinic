@@ -1,0 +1,30 @@
+.cert-thumb {
+    cursor: pointer;
+    transition: transform .15s ease;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+}
+.cert-thumb:hover { transform: scale(1.05); }
+/* Küçük (sayfa içi) görünüm */
+.dipl-thumb{
+    max-height: 300px;   /* İstersen 260–340 arası oynat */
+    width: 100%;
+    object-fit: contain; /* Kırpma yok; tüm belge görünsün */
+    background:#fff;
+    cursor: zoom-in;
+    transition: transform .15s ease;
+}
+.dipl-thumb:hover{ transform: scale(1.01); }
+
+@media (max-width: 768px){
+    .dipl-thumb{ max-height: 220px; }
+}
+
+/* Modalda görüntü boy kontrolü */
+#modalDiplomaImage{
+    max-height: 90vh;    /* Ekran yüksekliğini aşmasın */
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    background:#fff;
+}
