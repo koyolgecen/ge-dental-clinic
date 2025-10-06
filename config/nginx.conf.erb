@@ -1,0 +1,63 @@
+worker_processes 1;
+
+events { worker_connections 1024; }
+
+http {
+  include       mime.types;
+  default_type  application/octet-stream;
+  sendfile      on;
+  tcp_nopush    on;
+  keepalive_timeout  15;
+
+  # Gzip (Brotli modülü yok; gzip yeterli)
+  gzip on;
+  gzip_comp_level 5;
+  gzip_min_length 1024;
+  gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+
+  server {
+    listen <%= ENV["PORT"] %>;
+    server_name _;
+
+    # HTTPS'e zorla (Heroku proxy header'ı)
+    if ($http_x_forwarded_proto != "https") {
+      return 301 https://$host$request_uri;
+    }
+
+    # Statik site kökü: repo kökü
+    root /app;
+    index index.html;
+
+    # HTML: cache'leme
+    location ~* \.html?$ {
+      expires -1;
+      add_header Cache-Control "no-cache, no-store, must-revalidate";
+      try_files $uri =404;
+    }
+
+    # CSS/JS: 1 yıl immutable
+    location ~* \.(css|js)$ {
+      expires 1y;
+      add_header Cache-Control "public, max-age=31536000, immutable";
+      try_files $uri =404;
+    }
+
+    # Görseller & ikonlar: 1 yıl immutable
+    location ~* \.(webp|avif|jpg|jpeg|png|gif|svg|ico)$ {
+      expires 1y;
+      add_header Cache-Control "public, max-age=31536000, immutable";
+      try_files $uri =404;
+    }
+
+    # Kalan her şey normal serve
+    location / {
+      try_files $uri $uri/ =404;
+    }
+
+    # Özel 404 sayfan varsa:
+    error_page 404 /404.html;
+    location = /404.html {
+      internal;
+    }
+  }
+}
