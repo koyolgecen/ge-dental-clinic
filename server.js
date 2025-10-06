@@ -1,59 +1,36 @@
 const express = require('express');
-const compression = require('compression');
-const helmet = require('helmet');
 const path = require('path');
+const compression = require('compression');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const root = __dirname; // repo kökü (index.html burada)
 
-// Heroku proxy
-app.set('trust proxy', 1);
-
-// HTTP -> HTTPS yönlendirme
-app.use((req, res, next) => {
-    if (req.secure || req.headers['x-forwarded-proto'] === 'https') return next();
-    return res.redirect(301, 'https://' + req.headers.host + req.originalUrl);
-});
-
-// Güvenlik header’ları
-app.use(helmet({
-    contentSecurityPolicy: false, // (animasyon/plugin’leriniz sorun çıkarmasın diye)
-    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
-    crossOriginResourcePolicy: { policy: "cross-origin" }
-}));
-
-// Sıkıştırma
 app.use(compression());
 
-// Statik dosyalar (cache stratejisi)
-const staticOpts = {
-    etag: true,
-    lastModified: true,
+// Statik dosyalar (css, js, images, .html)
+app.use(express.static(root, {
+    extensions: ['html'], // /about -> about.html çalışsın
+    maxAge: '30d',
     setHeaders: (res, filePath) => {
-        const ext = path.extname(filePath).toLowerCase();
-
-        // HTML: cache kısa
-        if (ext === '.html') {
-            res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 saat
-        } else if (['.css','.js','.jpg','.jpeg','.png','.webp','.avif','.svg','.ico','.gif','.woff','.woff2'].includes(ext)) {
-            res.setHeader('Cache-Control', 'public, max-age=604800'); // 7 gün
+        if (filePath.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
         } else {
-            res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 gün
+            res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
         }
-
-        // HSTS (sadece HTTPS üzerinde etkili)
-        res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
     }
-};
+}));
 
-app.use(express.static(path.join(__dirname), staticOpts));
-
-// Root
-app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-
-// 404 (opsiyonel özel sayfa)
-app.use((req, res) => res.status(404).sendFile(path.join(__dirname, 'index.html')));
-
-app.listen(PORT, () => {
-    console.log(`G&E Dental running on ${PORT}`);
+// Ana sayfa
+app.get('/', (req, res) => {
+    res.sendFile(path.join(root, 'index.html'));
 });
+
+// 404 fallback (opsiyonel 404.html’in varsa kullanır)
+app.use((req, res) => {
+    res.status(404).sendFile(path.join(root, '404.html'), (err) => {
+        if (err) res.status(404).send('404 Not Found');
+    });
+});
+
+const port = process.env.PORT || 3000;
+app.listen(port, () => console.log(`✅ Server ready on ${port}`));
