@@ -8,7 +8,20 @@ document.querySelectorAll('.cert-thumb').forEach(img => {
     });
 });
 
-// Thumb'a tıklanınca modal görselini doldur
-document.querySelector('.dipl-thumb')?.addEventListener('click', function(){
-    document.getElementById('modalDiplomaImage').src = this.dataset.full || this.src;
+// Tüm .dipl-thumb tıklamalarını tek noktadan yakala
+document.addEventListener('click', function (e) {
+    const thumb = e.target.closest('.dipl-thumb');
+    if (!thumb) return;
+
+    // Hedef modal id'sini al (#diplomaModal / #diplomaModal2)
+    const targetSel = thumb.getAttribute('data-bs-target');
+    const modalEl = document.querySelector(targetSel);
+    if (!modalEl) return;
+
+    // Modal içindeki img'yi bul ve doldur
+    const img = modalEl.querySelector('img');
+    if (img) {
+        img.src = thumb.dataset.full || thumb.src;
+        img.alt = (thumb.alt || 'Diploma') + ' — Büyütülmüş';
+    }
 });
